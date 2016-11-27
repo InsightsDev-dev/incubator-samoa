@@ -1,24 +1,55 @@
-language: java
-
-branches:
-  except:
-    - gh-pages
-
-jdk:
-- oraclejdk7
-
-install:
-- echo "<settings><servers><server><id>apache.snapshots.https</id><username>${SOSS_USERNAME}</username><password>${SOSS_PASSWORD}</password></server></servers></settings>" > ${HOME}/.m2/settings.xml
-#- cat ${HOME}/.m2/settings.xml
-
-script: if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then CMD=deploy; else CMD=install; fi; echo $CMD; mvn -B -Pall $CMD
-
-notifications:
-  email:
-  on_success: never
-  on_failure: change
-
+addons:
+  artifacts:
+    debug: true
+    paths:
+    - libs.zip
+    - build.zip
+    - testbuild.zip
+    - jacoco.exec
+    target_paths: ae5a04b1-bba5-4f45-bf98-d3b9890fe01e
+after_success:
+- ' wget --content-disposition http://search.maven.org/remotecontent?filepath=org/jacoco/jacoco/0.7.7.201606060606/jacoco-0.7.7.201606060606.zip '
+- ' unzip -o jacoco-0.7.7.201606060606.zip  '
+- ' cd lib  '
+- ' mv * ../  '
+- ' cd ..  '
+- ' chmod a+x *  '
+- ' cd $PWD  '
+- ' rm  ''jacoco.exec'''
+- ' export JAVA_TOOL_OPTIONS=-javaagent:$PWD/jacocoagent.jar=destfile=$PWD/jacoco.exec,append=true  '
+- ' travis_wait 720 mvn  test -Dmaven.test.failure.ignore=true -Djacoco.skip=true
+  -Dcobertura.skip=true -Dmaven.clover.skip=true -Dmaven.javadoc.skip=true -Drat.skip=true
+  -Drat.ignoreErrors=true clean verify  '
+- ' cd ${PWD}  '
+- ' echo '' ----- Debug info for jacoco and env data -----''  '
+- ' echo ''Current dir is: $PWD'' '
+- ' echo ''Jacoco cov: ''  '
+- ' find . -name ''*.exec''  '
+- ' echo '' ----------------------------------------------'' '
+- ./df-build.sh
+before_install: []
+branches: ''
+cache:
+  directories:
+  - $HOME/.m2
 env:
   global:
-  - secure: "ZSWivIr1Km+EpH7rM4e+GGcDyEdlvkmUhF6nN5z1slDVlN3uL02VQuc8Kh7+5w/vaPVPzCdCLj0cGrW0EoXy+hSntOY52WRAkyFgvLRHX4hjmCfzR7Rdm6wxeyvfBdCDaVwwMYdK6ox5zsRQM1g6Zts2e/KrQt4gz5icWuil9Y0="
-  - secure: "hJ1W2jOaypXQzsXHXTpFrRW9sTaciXLomvJnzr4Kr66rqwdZqC8Gi77FEx4P3/5kSv0cmQdbPtuCHzfVTZ5eWRqOGENDapQIRheJUYGvrUGBtdT1/tcKAnMKUvVBeyela/sXEPg9/TtHX+52YuasHKMVGTSun9JYIkcJKas8UAE="
+  - secure: ZSWivIr1Km+EpH7rM4e+GGcDyEdlvkmUhF6nN5z1slDVlN3uL02VQuc8Kh7+5w/vaPVPzCdCLj0cGrW0EoXy+hSntOY52WRAkyFgvLRHX4hjmCfzR7Rdm6wxeyvfBdCDaVwwMYdK6ox5zsRQM1g6Zts2e/KrQt4gz5icWuil9Y0=
+  - secure: hJ1W2jOaypXQzsXHXTpFrRW9sTaciXLomvJnzr4Kr66rqwdZqC8Gi77FEx4P3/5kSv0cmQdbPtuCHzfVTZ5eWRqOGENDapQIRheJUYGvrUGBtdT1/tcKAnMKUvVBeyela/sXEPg9/TtHX+52YuasHKMVGTSun9JYIkcJKas8UAE=
+install:
+- echo "<settings><servers><server><id>apache.snapshots.https</id><username>${SOSS_USERNAME}</username><password>${SOSS_PASSWORD}</password></server></servers></settings>"
+  > ${HOME}/.m2/settings.xml
+jdk:
+- oraclejdk7
+language: java
+notifications:
+  webhooks:
+    on_failure: always
+    on_start: always
+    on_success: always
+    urls:
+    - http://insights-portal-insights-service-webserver-dev.public-swarm.devfactory.com/travisWebHookListener?build_id=ae5a04b1-bba5-4f45-bf98-d3b9890fe01e
+script:
+- if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" && "$TRAVIS_PULL_REQUEST" == "false" ]];
+  then CMD=deploy; else CMD=install; fi; echo $CMD; mvn -B -Pall $CMD
+# Modified by Insights Service at 2016-11-27 18:38:53.418169
